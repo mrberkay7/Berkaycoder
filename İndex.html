@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Geometry Rush</title>
+  <link rel="stylesheet" href="style.css" />
+  <script defer src="script.js"></script>
+
+  <!-- Google Font (Geometry tarzı font) -->
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <header>
+    <h1 class="title">GEOMETRY RUSH</h1>
+  </header>
+
+  <main>
+    <!-- Oyun alanı -->
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+
+    <!-- Başlangıç menüsü -->
+    <div id="menu" class="menu">
+      <button id="startBtn" class="btn">BAŞLA</button>
+      <button id="settingsBtn" class="btn">AYARLAR</button>
+      <button id="creditsBtn" class="btn">HAKKINDA</button>
+    </div>
+
+    <!-- Skor ve Oyun Sonu alanı -->
+    <div id="hud">
+      <p id="score">Skor: 0</p>
+      <button id="restartBtn" class="btn hidden">YENİDEN OYNA</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>Made with ❤️ by Berkay | Geometry Rush © 2025</p>
+  </footer>
+
+  <!-- Basit müzik elementi -->
+  <audio id="bgMusic" src="assets/music.mp3" loop></audio>
+</body>
+</html>
