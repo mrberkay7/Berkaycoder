@@ -1,43 +1,490 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Geometry Rush</title>
-  <link rel="stylesheet" href="style.css" />
-  <script defer src="script.js"></script>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>Geometry Rush — Tek Dosya</title>
+<style>
+  /* ===== GENEL SAYFA ===== */
+  :root{
+    --accent: #00f5ff;
+    --bg1: #0b1020;
+    --bg2: #3b2a6d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    width:100%;height:100%;
+    overflow:hidden; /* kaydırmayı kapat */
+    touch-action:none; /* dokunmatik kaydırmayı engelle */
+    -webkit-user-select:none;
+    user-select:none;
+    background:linear-gradient(120deg,#0b1020 0%, #2b1055 50%, #412a8f 100%);
+    font-family: system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    color:#e9f8ff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
 
-  <!-- Google Font (Geometry tarzı font) -->
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&display=swap" rel="stylesheet" />
+  header{position:absolute;top:10px;left:16px;z-index:30}
+  .title{font-weight:700;letter-spacing:2px;text-shadow:0 0 18px rgba(0,245,255,0.15)}
+  footer{position:absolute;bottom:8px;font-size:12px;color:rgba(255,255,255,0.6)}
+
+  /* ===== OYUN KUTUSU ===== */
+  #gameWrap{
+    width:92vw; max-width:900px; height:52vh; max-height:520px;
+    display:flex;align-items:center;justify-content:center;
+    position:relative;
+    border-radius:14px;
+    box-shadow:0 12px 40px rgba(0,0,0,0.5), 0 0 60px rgba(0,245,255,0.06) inset;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.08));
+    overflow:hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  canvas{
+    width:100%; height:100%;
+    display:block;
+    touch-action:none;
+  }
+
+  /* HUD ve menü */
+  #hud{position:absolute;top:10px;right:10px;z-index:40;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+  .badge{background:rgba(0,0,0,0.3);padding:6px 10px;border-radius:10px;font-weight:600;backdrop-filter:blur(4px)}
+  #menu{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:40;display:flex;flex-direction:column;gap:12px;align-items:center;padding:18px;border-radius:12px;background:linear-gradient(180deg,rgba(0,0,0,0.35),rgba(0,0,0,0.25));box-shadow:0 8px 30px rgba(0,0,0,0.4)}
+  .btn{padding:10px 18px;border-radius:10px;border:none;background:var(--accent);color:#02111a;font-weight:700;font-size:15px;cursor:pointer;min-width:140px;box-shadow:0 6px 18px rgba(0,245,255,0.12)}
+  .btn.secondary{background:transparent;color:#e9f8ff;border:1px solid rgba(255,255,255,0.08)}
+  .muted{opacity:0.7;font-size:13px}
+
+  #levelSelect{display:flex;gap:8px}
+  .pill{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,0.03);cursor:pointer;border:1px solid rgba(255,255,255,0.04)}
+  .pill.active{background:var(--accent);color:#02111a;font-weight:800;box-shadow:0 6px 24px rgba(0,245,255,0.08)}
+
+  /* Game over panel */
+  #gameOver{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:45;display:none;flex-direction:column;align-items:center;background:linear-gradient(180deg,rgba(0,0,0,0.55),rgba(0,0,0,0.4));padding:16px;border-radius:12px}
+  #gameOver .big{font-size:20px;font-weight:800;margin-bottom:10px}
+
+  /* küçük ayarlar */
+  @media (max-width:420px){
+    .title{font-size:18px} #gameWrap{height:60vh}
+    .btn{min-width:110px;font-size:14px}
+  }
+</style>
 </head>
 <body>
-  <header>
-    <h1 class="title">GEOMETRY RUSH</h1>
-  </header>
+  <header><div class="title">GEOMETRY RUSH — MOBILE</div></header>
 
-  <main>
-    <!-- Oyun alanı -->
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+  <div id="gameWrap">
+    <canvas id="gameCanvas"></canvas>
 
-    <!-- Başlangıç menüsü -->
-    <div id="menu" class="menu">
-      <button id="startBtn" class="btn">BAŞLA</button>
-      <button id="settingsBtn" class="btn">AYARLAR</button>
-      <button id="creditsBtn" class="btn">HAKKINDA</button>
-    </div>
-
-    <!-- Skor ve Oyun Sonu alanı -->
+    <!-- HUD-->
     <div id="hud">
-      <p id="score">Skor: 0</p>
-      <button id="restartBtn" class="btn hidden">YENİDEN OYNA</button>
+      <div class="badge" id="scoreBadge">Skor: 0</div>
+      <div class="badge muted" id="levelBadge">Bölüm: Kolay</div>
     </div>
-  </main>
 
-  <footer>
-    <p>Made with ❤️ by Berkay | Geometry Rush © 2025</p>
-  </footer>
+    <!-- Menü -->
+    <div id="menu">
+      <div style="font-weight:800;font-size:18px;margin-bottom:6px">GEOMETRY RUSH</div>
+      <div id="levelSelect">
+        <div class="pill active" data-level="easy">Kolay</div>
+        <div class="pill" data-level="medium">Orta</div>
+        <div class="pill" data-level="hard">Zor</div>
+      </div>
+      <button class="btn" id="startBtn">BAŞLA</button>
+      <button class="btn secondary" id="howBtn">Oynanış (Kısa)</button>
+      <div class="muted" style="margin-top:6px;font-size:12px">Dokun → zıpla • İnternet gerekli değil</div>
+    </div>
 
-  <!-- Basit müzik elementi -->
-  <audio id="bgMusic" src="assets/music.mp3" loop></audio>
+    <!-- Game Over -->
+    <div id="gameOver">
+      <div class="big" id="goTitle">Game Over</div>
+      <div style="margin-bottom:8px">Skor: <span id="finalScore">0</span></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="retryBtn">Yeniden Oyna</button>
+        <button class="btn secondary" id="menuBtn">Menüye Dön</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>Made with ❤️ — Berkay • Tek dosya oyun</footer>
+
+<script>
+/* ============================
+   Tek Dosya: Oyun Mantığı (Canvas)
+   - Mobil uyumlu, sabit ekran, touch controls
+   - Canlı parallax arka plan
+   - Bölümler: Kolay / Orta / Zor
+   - Engeller spawn, AABB çarpışma
+   - WebAudio ile ses efektleri (yerel, tarayıcı içinde üretilir)
+   ============================ */
+
+/* ----- Ayarlar / Bölümler ----- */
+const LEVELS = {
+  easy:   {speed: 220, spawnRate: 1500, obstacleSize: [40,70], gap: 220, gravity: 1600},
+  medium: {speed: 320, spawnRate: 1100, obstacleSize: [40,90], gap: 170, gravity: 1700},
+  hard:   {speed: 420, spawnRate: 850,  obstacleSize: [50,110], gap: 130, gravity: 1800}
+};
+
+let chosenLevelKey = 'easy';
+
+/* ----- Canvas setup ----- */
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d', {alpha:true});
+const DPR = Math.max(1, window.devicePixelRatio || 1);
+
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = Math.floor(rect.width * DPR);
+  canvas.height = Math.floor(rect.height * DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  // yeniden çizim ihtiyaçlarını azaltmak için durum bozulmaz
+});
+
+/* ----- State ----- */
+let running = false;
+let lastTime = 0;
+let accSpawn = 0;
+let score = 0;
+let obstacles = [];
+let parallax = {layers:[], worldOffset:0};
+let player = {};
+let settings = {};
+let audioCtx = null;
+
+/* ----- UI elemanları ----- */
+const menu = document.getElementById('menu');
+const startBtn = document.getElementById('startBtn');
+const retryBtn = document.getElementById('retryBtn');
+const menuBtn = document.getElementById('menuBtn');
+const gameOverPanel = document.getElementById('gameOver');
+const scoreBadge = document.getElementById('scoreBadge');
+const levelBadge = document.getElementById('levelBadge');
+const finalScore = document.getElementById('finalScore');
+const levelPills = document.querySelectorAll('.pill');
+const howBtn = document.getElementById('howBtn');
+
+/* ----- Ses (WebAudio ile basit efektler) ----- */
+function ensureAudio(){
+  if(audioCtx) return;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  audioCtx = new AudioContext();
+}
+function playBeep(type='jump'){
+  // Basit kısa ton üretimi
+  try{
+    ensureAudio();
+    const t = audioCtx.currentTime;
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.type = type==='jump' ? 'sawtooth' : 'square';
+    o.frequency.setValueAtTime(type==='jump'? 520 : 120, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+    o.connect(g); g.connect(audioCtx.destination);
+    o.start(t); o.stop(t + 0.35);
+  }catch(e){ /* sessiz hata */ }
+}
+
+/* ----- Parallax arka plan ----- */
+function initParallax(){
+  parallax.layers = [
+    {speed:0.12, items:[], colorA:'rgba(255,255,255,0.02)', colorB:'rgba(255,255,255,0.03)', size: [160,260], density: 5},
+    {speed:0.25, items:[], colorA:'rgba(255,255,255,0.03)', colorB:'rgba(255,255,255,0.05)', size: [60,120], density: 9},
+    {speed:0.6, items:[], colorA:'rgba(255,245,255,0.06)', colorB:'rgba(255,245,255,0.09)', size: [12,36], density: 40}
+  ];
+  // doldur
+  const w = canvas.width/DPR, h = canvas.height/DPR;
+  parallax.layers.forEach(layer => {
+    layer.items.length = 0;
+    const count = Math.floor(layer.density);
+    for(let i=0;i<count;i++){
+      layer.items.push({
+        x: Math.random()*w,
+        y: Math.random()*h,
+        s: layer.size[0] + Math.random()*(layer.size[1]-layer.size[0]),
+        a: 0.05 + Math.random()*0.5
+      });
+    }
+  });
+}
+
+/* ----- Oyun başlat / sıfırla ----- */
+function resetGame(levelKey){
+  const cfg = LEVELS[levelKey];
+  settings = Object.assign({}, cfg);
+  obstacles = [];
+  running = false;
+  accSpawn = 0;
+  score = 0;
+  lastTime = performance.now();
+  parallax.worldOffset = 0;
+  // player başlangıç pozisyonu ve fizik
+  player = {
+    x: canvas.width/DPR*0.18,
+    y: canvas.height/DPR*0.6,
+    w: Math.max(24, Math.floor(canvas.width/DPR*0.05)),
+    h: Math.max(24, Math.floor(canvas.height/DPR*0.06)),
+    vy: 0,
+    jumpStrength: -650,
+    grounded: false,
+    color: '#f7ff6b',
+  };
+  // parallax yeniden oluştur
+  initParallax();
+  // UI
+  scoreBadge.textContent = 'Skor: 0';
+  levelBadge.textContent = 'Bölüm: ' + (levelKey==='easy'?'Kolay': levelKey==='medium'?'Orta':'Zor');
+}
+
+/* ----- Engel üretimi ----- */
+function spawnObstacle(){
+  const h = canvas.height/DPR;
+  const cfg = settings;
+  const w_min = cfg.obstacleSize[0], w_max = cfg.obstacleSize[1];
+  const ow = w_min + Math.random()*(w_max - w_min);
+  const gap = Math.max(90, cfg.gap + (Math.random()*60 - 30)); // biraz değişkenlik
+  // engel iki tip: spike (yüksek), blok (zemine yakın). Biz basit blok yapacağız.
+  const height = 20 + Math.random()* (Math.min(160, h*0.38));
+  const ob = {
+    x : canvas.width/DPR + 20,
+    y : h - height - 10,
+    w : ow,
+    h : height,
+    color : Math.random()>0.5 ? '#ff6b6b' : '#ff9f43',
+    passed: false
+  };
+  obstacles.push(ob);
+}
+
+/* ----- Çarpışma kontrolü (AABB) ----- */
+function isColliding(a,b){
+  return !(a.x + a.w < b.x || a.x > b.x + b.w || a.y + a.h < b.y || a.y > b.y + b.h);
+}
+
+/* ----- Oyun döngüsü ----- */
+function gameLoop(ts){
+  if(!running) return;
+  const dt = Math.min(0.033, (ts - lastTime)/1000);
+  lastTime = ts;
+
+  // physics
+  player.vy += settings.gravity * dt;
+  player.y += player.vy * dt;
+
+  // yerde kalmasını sağla
+  const groundY = canvas.height/DPR - 10 - player.h;
+  if(player.y > groundY){ player.y = groundY; player.vy = 0; player.grounded = true; }
+  else player.grounded = false;
+
+  // spawn
+  accSpawn += dt*1000;
+  if(accSpawn >= settings.spawnRate){
+    accSpawn = 0;
+    spawnObstacle();
+  }
+
+  // ilerleme (dünya offseti, skor)
+  const move = settings.speed * dt;
+  parallax.worldOffset += move;
+  // hareket eden engeller
+  for(let i=obstacles.length-1;i>=0;i--){
+    const ob = obstacles[i];
+    ob.x -= move;
+    // skor
+    if(!ob.passed && ob.x + ob.w < player.x){
+      ob.passed = true; score += 10;
+    }
+    if(ob.x + ob.w < -50) obstacles.splice(i,1);
+  }
+
+  // collision check
+  for(const ob of obstacles){
+    if(isColliding(player, ob)){
+      // game over
+      endGame();
+      return;
+    }
+  }
+
+  // basit skor artışı mesafe bazlı
+  score += Math.floor(dt * (settings.speed/50));
+  scoreBadge.textContent = 'Skor: ' + Math.max(0, Math.floor(score));
+
+  // draw
+  drawScene();
+
+  // devam
+  requestAnimationFrame(gameLoop);
+}
+
+/* ----- Çizim ----- */
+function drawScene(){
+  const w = canvas.width/DPR, h = canvas.height/DPR;
+  ctx.clearRect(0,0,w,h);
+
+  // canlı gradient + parallax katmanları çiz
+  // arka plan degrade
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0, '#1a052a');
+  g.addColorStop(0.45, '#2b1055');
+  g.addColorStop(1, '#0b1020');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,w,h);
+
+  // parallax noktalar / şekiller
+  parallax.layers.forEach((layer, idx) => {
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    layer.items.forEach(it => {
+      const x = (it.x - parallax.worldOffset * layer.speed) % (w + 400);
+      const px = x < -200 ? x + (w + 400) : x;
+      const y = it.y + Math.sin((it.x + parallax.worldOffset*layer.speed)*0.002 + idx)*16;
+      // şekil: yuvarlak veya hafif dikdörtgen
+      ctx.beginPath();
+      const s = it.s * (0.6 + 0.4*Math.sin(it.x*0.01 + parallax.worldOffset*0.002));
+      ctx.fillStyle = idx===2 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.03)';
+      roundRect(ctx, px, y, s*0.6, s*0.35, Math.max(2,s*0.12));
+      ctx.fill();
+    });
+    ctx.restore();
+  });
+
+  // zemin (hafif neon çizgi)
+  ctx.fillStyle = 'rgba(255,255,255,0.04)';
+  ctx.fillRect(0, h - 12, w, 12);
+  ctx.strokeStyle = 'rgba(0,245,255,0.06)';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0,h-12); ctx.lineTo(w,h-12); ctx.stroke();
+
+  // engeller
+  for(const ob of obstacles){
+    // gölge
+    ctx.fillStyle = 'rgba(0,0,0,0.25)';
+    ctx.fillRect(ob.x + 6, ob.y + 6, ob.w, ob.h);
+    // ana renk
+    drawRoundedRect(ob.x, ob.y, ob.w, ob.h, 6, ob.color);
+    // üst parlak çizgi
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fillRect(ob.x+4, ob.y+4, ob.w-8, 6);
+  }
+
+  // player (kare)
+  // glow
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,245,255,0.18)';
+  ctx.shadowBlur = 18;
+  drawRoundedRect(player.x, player.y, player.w, player.h, 6, player.color);
+  ctx.restore();
+
+  // küçük detay: ön plan parallax çizgileri
+  ctx.globalAlpha = 0.12;
+  for(let i=0;i<6;i++){
+    const yy = h - 18 - i*8;
+    ctx.fillStyle = i%2? 'rgba(0,245,255,0.02)' : 'rgba(255,255,255,0.01)';
+    ctx.fillRect((parallax.worldOffset*0.3 + i*70)% (w+200) -100, yy, w+200, 2);
+  }
+  ctx.globalAlpha = 1;
+}
+
+/* yardımcı: yuvarlak köşe dikdörtgen */
+function drawRoundedRect(x,y,w,h,r,color){
+  ctx.fillStyle = color;
+  roundRect(ctx,x,y,w,h,r);
+  ctx.fill();
+}
+function roundRect(ctx,x,y,w,h,r){
+  if (w < 2 * r) r = w / 2;
+  if (h < 2 * r) r = h / 2;
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,   x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x,   y+h, r);
+  ctx.arcTo(x,   y+h, x,   y,   r);
+  ctx.arcTo(x,   y,   x+w, y,   r);
+  ctx.closePath();
+}
+
+/* ----- Oyun başlat / bitir ----- */
+function startGame(){
+  menu.style.display = 'none';
+  gameOverPanel.style.display = 'none';
+  running = true;
+  lastTime = performance.now();
+  // bir kere ses başlatma gereği tarayıcı sessizliyini aşmak için
+  try{ if(!audioCtx) ensureAudio(); }catch(e){}
+  requestAnimationFrame(gameLoop);
+}
+function endGame(){
+  running = false;
+  playBeep('hit');
+  finalScore.textContent = Math.max(0, Math.floor(score));
+  gameOverPanel.style.display = 'flex';
+}
+
+/* ----- Kontroller: touch ve mouse ----- */
+function playerJump(){
+  if(!running) return;
+  // Havadaysa sınırlı çift zıplama istemiyoruz — tek zıplama
+  if(player.grounded || player.vy > -60){
+    player.vy = player.jumpStrength;
+    player.grounded = false;
+    playBeep('jump');
+  }
+}
+canvas.addEventListener('touchstart', (e)=>{ e.preventDefault(); if(!running){ startGame(); } playerJump(); });
+canvas.addEventListener('mousedown', (e)=>{ e.preventDefault(); if(!running){ startGame(); } playerJump(); });
+
+/* ----- UI butonları ----- */
+startBtn.addEventListener('click', ()=>{ resetGame(chosenLevelKey); startGame(); });
+retryBtn.addEventListener('click', ()=>{ resetGame(chosenLevelKey); startGame(); });
+menuBtn.addEventListener('click', ()=>{
+  resetGame(chosenLevelKey);
+  menu.style.display = 'flex';
+  gameOverPanel.style.display = 'none';
+});
+howBtn.addEventListener('click', ()=> {
+  alert("Oynanış:\n• Ekrana dokun → zıpla\n• Amaç engelleri geçmiş kadar mesafe kat etmek\n• Bölüm seç (Kolay / Orta / Zor) ve BAŞLA'ya bas");
+});
+
+/* Bölüm seçimi */
+levelPills.forEach(p=>{
+  p.addEventListener('click', ()=>{
+    levelPills.forEach(x=>x.classList.remove('active'));
+    p.classList.add('active');
+    chosenLevelKey = p.dataset.level;
+    resetGame(chosenLevelKey);
+  });
+});
+
+/* ----- İlk kurulum ----- */
+function init(){
+  resizeCanvas();
+  resetGame(chosenLevelKey);
+  // başlangıç görseli için bir kez çiz
+  drawScene();
+  // parallax yeniden boyutlandırıldığında itemleri güncelle
+  window.requestAnimationFrame(()=>{ drawScene(); });
+
+  // mobil tarayıcılarda tıklama ile AudioContext başlatma kısıtı var; başlaması için kullanıcı etkileşimi bekle
+  document.addEventListener('touchstart', function _once(){
+    try{ ensureAudio(); }catch(e){}
+    document.removeEventListener('touchstart', _once);
+  }, {passive:false});
+}
+init();
+
+/* küçük yardım: klavyeden boşluk zıplama (masaüstü test için) */
+window.addEventListener('keydown', e=>{
+  if(e.code === 'Space'){ e.preventDefault(); if(!running){ resetGame(chosenLevelKey); startGame(); } playerJump(); }
+});
+
+/* performans: odağı canvas'ta tut */
+canvas.addEventListener('touchmove', e=>e.preventDefault(), {passive:false});
+document.addEventListener('contextmenu', e=>e.preventDefault());
+
+</script>
 </body>
 </html>
